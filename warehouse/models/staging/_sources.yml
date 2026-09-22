@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Parquet written by data/generate.py. External files rather than loaded
+      tables, so `dbt build` never depends on a load step having been run first.
+    meta:
+      external_location: "{{ env_var('MX_DATA_DIR', 'data/raw') }}/{name}.parquet"
+    tables:
+      - name: accounts
+      - name: users
+      - name: events
+      - name: subscriptions

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # CI never needs a key and never reaches a model. The dataset is generated
+  # from a seed, and the eval runs its offline drivers.
+  ANTHROPIC_API_KEY: ""
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --extra dev
+
+      - name: Lint
+        run: uv run ruff check src tests evals data
+
+      - name: Format check
+        run: uv run ruff format --check src tests evals data
+
+      - name: Registry parses
+        # A malformed metric is a broken deploy. It fails here, before
+        # anything has been built on top of it.
+        run: uv run python -c "from metrics_mcp.registry import load; print(len(load().metrics), 'metrics')"
+
+      - name: Build warehouse
+        run: |
+          uv run dbt deps --project-dir warehouse
+          uv run python data/generate.py
+          DBT_PROFILES_DIR=warehouse uv run dbt build --project-dir warehouse
+
+      - name: Registry resolves against the warehouse
+        # The guard that makes the registry worth trusting: a renamed column
+        # fails the build instead of returning a wrong number to whoever asks
+        # next.
+        run: uv run mx check
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Eval
+        # keyword is the baseline; hallucinator must be caught every time. The
+        # script exits non-zero if an invented number ever survives
+        # verification, so a guard that quietly stops guarding fails CI.
+        run: uv run python evals/run_eval.py --llm keyword --compare hallucinator --compare misattributor

@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Generated from a fixed seed by data/generate.py — reproducible, so there is
+# no reason to carry it in git. `mx seed` rebuilds it in seconds.
+data/raw/
+warehouse/target/
+warehouse/dbt_packages/
+warehouse/logs/
+*.duckdb
+*.duckdb.wal
+.env
+warehouse/.user.yml

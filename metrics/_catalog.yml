@@ -1,0 +1,202 @@
+# The metric registry.
+#
+# This file is the only place a metric is defined. The agent does not write
+# SQL; it names an entry here, and the SQL is built from the fields below
+# against a dbt model. Three rules hold it together:
+#
+#   1. A metric names a model and columns that exist. `mx check` resolves every
+#      one of them against the built warehouse and fails if any is missing, so
+#      a renamed column breaks the build instead of a dashboard.
+#
+#   2. A ratio is a pair of columns, never a stored rate. sum(numerator) /
+#      sum(denominator) survives aggregation; avg(rate) does not. An account
+#      with one user would otherwise weigh as much as one with forty, and the
+#      number would stop being what its name says while still looking fine.
+#
+#   3. `dimensions` is an allow-list. A cut that is not listed is refused
+#      rather than guessed, because most columns on a fact table are not valid
+#      things to group a given measure by.
+#
+# `caveats` is not decoration. It is returned to the agent with the definition,
+# and it is where the reason a number is easy to misread gets said out loud.
+
+version: 1
+
+metrics:
+  - id: MX-001
+    label: Active accounts
+    definition: >
+      Accounts that produced at least one event in the month. Presence, not
+      value: an account that opened one screen counts.
+    grain: month
+    unit: count
+    model: fct_account_month
+    type: count_distinct
+    measure: account_id
+    filter: is_active
+    dimensions: [plan, country]
+    owner: analytics
+    status: active
+    caveats: >
+      Counts any event, including passive views. For accounts doing something
+      that produces value, use MX-011.
+
+  - id: MX-002
+    label: Monthly active users
+    definition: Distinct people who produced at least one event in the month.
+    grain: month
+    unit: count
+    model: fct_user_month
+    type: count_distinct
+    measure: user_id
+    filter: is_active
+    dimensions: [plan, country]
+    owner: analytics
+    status: active
+    caveats: >
+      A person, not a seat. Seats purchased are on the account and can be far
+      higher than the number of people who ever log in.
+
+  - id: MX-003
+    label: New accounts
+    definition: Accounts whose signup month is this month.
+    grain: month
+    unit: count
+    model: fct_account_month
+    type: count_distinct
+    measure: account_id
+    filter: is_new
+    dimensions: [plan, country]
+    owner: analytics
+    status: active
+
+  - id: MX-004
+    label: MRR
+    definition: Monthly recurring revenue, summed across subscribed accounts.
+    grain: month
+    unit: currency
+    model: fct_account_month
+    type: sum
+    measure: mrr
+    dimensions: [plan, country]
+    owner: finance
+    status: active
+    caveats: >
+      Seat-based and taken from the subscription row for that month, so it
+      moves when seats change as well as when accounts do.
+
+  - id: MX-005
+    label: Paying accounts
+    definition: Accounts with a subscription above zero in the month.
+    grain: month
+    unit: count
+    model: fct_account_month
+    type: count_distinct
+    measure: account_id
+    filter: is_paying
+    dimensions: [plan, country]
+    owner: finance
+    status: active
+
+  - id: MX-006
+    label: ARPA
+    definition: Average revenue per paying account — MRR divided by paying accounts.
+    grain: month
+    unit: currency
+    model: fct_account_month
+    type: ratio
+    numerator: mrr
+    denominator: is_paying
+    dimensions: [plan, country]
+    owner: finance
+    status: active
+    caveats: >
+      Denominator is paying accounts, not all accounts. Free accounts would
+      drag it toward zero and it would no longer describe a customer.
+
+  - id: MX-007
+    label: Activation rate
+    definition: >
+      Share of accounts that took a terminal action within seven days of
+      signing up, measured on the signup month.
+    grain: month
+    unit: rate
+    model: fct_account_month
+    type: ratio
+    numerator: is_activated_7d
+    denominator: is_activation_eligible
+    dimensions: [plan, country]
+    owner: product
+    status: active
+    caveats: >
+      Terminal actions only — submitting an idea or prioritising a feature,
+      not viewing a screen. The denominator is accounts that signed up in that
+      month, so the most recent month is understated until its seven-day
+      windows have closed.
+
+  - id: MX-008
+    label: Monthly user retention
+    definition: >
+      Share of users active in the previous month who were active again this
+      month.
+    grain: month
+    unit: rate
+    model: fct_user_month
+    type: ratio
+    numerator: is_retained
+    denominator: was_active_prev_month
+    dimensions: [plan, country]
+    owner: product
+    status: active
+    caveats: >
+      Month over month, not a cohort curve. The first month of the window has
+      no previous month and its denominator is zero.
+
+  - id: MX-009
+    label: Prioritisation adoption
+    definition: >
+      Share of active accounts that prioritised at least one feature in the
+      month.
+    grain: month
+    unit: rate
+    model: fct_account_month
+    type: ratio
+    numerator: used_prioritization
+    denominator: is_active
+    dimensions: [plan, country]
+    owner: product
+    status: active
+
+  - id: MX-010
+    label: Terminal actions per active user
+    definition: >
+      Terminal actions in the month divided by the people who were active in
+      it.
+    grain: month
+    unit: ratio
+    model: fct_user_month
+    type: ratio
+    numerator: n_terminal_events
+    denominator: is_active
+    dimensions: [plan, country]
+    owner: product
+    status: active
+
+  - id: MX-011
+    label: Contributing accounts
+    definition: >
+      Accounts that took at least one terminal action in the month — the
+      stricter reading of "active".
+    grain: month
+    unit: count
+    model: fct_account_month
+    type: count_distinct
+    measure: account_id
+    filter: n_terminal_events > 0
+    dimensions: [plan, country]
+    owner: product
+    status: active
+    caveats: >
+      Deliberately kept beside MX-001 rather than replacing it. Two honest
+      definitions of "active" exist; the registry names both so a conversation
+      can say which one it means.

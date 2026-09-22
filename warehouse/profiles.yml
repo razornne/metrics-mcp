@@ -1,0 +1,12 @@
+# Kept in the repo on purpose. There is no credential here: the warehouse is a
+# DuckDB file next to it, and a reviewer should be able to clone and build
+# without inventing a profile of their own.
+metrics_warehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('MX_DUCKDB', 'warehouse.duckdb') }}"
+      threads: 4
+      extensions:
+        - parquet

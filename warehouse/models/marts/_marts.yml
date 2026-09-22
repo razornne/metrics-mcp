@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: dim_month
+    description: Month spine covering the whole window, including empty months.
+    columns:
+      - name: month
+        description: First day of the month.
+        data_tests: [not_null, unique]
+      - name: is_partial
+        description: True for the last month in the window, which is incomplete.
+        data_tests: [not_null]
+
+  - name: fct_account_month
+    description: >
+      Account × month. Ratio metrics are pairs of columns here (numerator and
+      denominator), never a stored rate.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [account_id, month]
+    columns:
+      - name: account_id
+        data_tests: [not_null]
+      - name: month
+        data_tests: [not_null]
+      - name: plan
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["free", "pro", "enterprise"]
+      - name: n_events
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range: {min_value: 0, inclusive: true}
+      - name: is_activated_7d
+        description: >
+          True only on the signup month, and only when a terminal action
+          happened within seven days of signup.
+        data_tests: [not_null]
+
+  - name: fct_user_month
+    description: User × month, for metrics whose unit is a person.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [user_id, month]
+    columns:
+      - name: user_id
+        data_tests: [not_null]
+      - name: month
+        data_tests: [not_null]
+      - name: is_retained
+        description: Active this month and the month before. Pairs with was_active_prev_month.
+        data_tests: [not_null]

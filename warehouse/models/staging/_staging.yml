@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: >
+      Deduplicated and clock-corrected events. The two tests below are the
+      whole contract: if the dedupe clause is removed, uniqueness fails; if the
+      future-timestamp filter is removed, the range test fails.
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: occurred_at
+        data_tests: [not_null]
+      - name: is_terminal
+        data_tests: [not_null]
+      - name: event_name
+        data_tests: [not_null]
+
+  - name: stg_accounts
+    columns:
+      - name: account_id
+        data_tests: [not_null, unique]
+      - name: plan
+        data_tests:
+          - accepted_values:
+              values: ["free", "pro", "enterprise"]
+
+  - name: stg_users
+    columns:
+      - name: user_id
+        data_tests: [not_null, unique]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_accounts')
+              field: account_id
+
+  - name: stg_subscriptions
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [account_id, month]
+    columns:
+      - name: mrr
+        data_tests:
+          - dbt_utils.accepted_range: {min_value: 0, inclusive: true}

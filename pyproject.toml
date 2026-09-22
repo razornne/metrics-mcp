@@ -1,0 +1,47 @@
+[project]
+name = "metrics-mcp"
+version = "0.1.0"
+description = "A metric registry an agent must go through: definitions in YAML, SQL in dbt, and every number in an answer checked against the result it came from."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "mcp>=2.0",
+    "typer>=0.15",
+    "rich>=13.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "dbt-core>=1.9",
+    "dbt-duckdb>=1.9",
+]
+agent = [
+    "anthropic>=0.40",
+]
+
+[project.scripts]
+mx = "metrics_mcp.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/metrics_mcp"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

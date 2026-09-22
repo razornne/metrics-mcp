@@ -1,0 +1,59 @@
+# Questions a person would actually ask, and the metric that answers each.
+#
+# `metric: null` means the question has no answer in this registry. Those cases
+# are the point of the set, not padding: a system that always produces a number
+# is worse than one that says it cannot, because the wrong number is indistinguishable
+# from the right one at a glance. Roughly a third of the cases are unanswerable.
+
+cases:
+  - q: How many accounts were active last quarter?
+    metric: MX-001
+  - q: What was our MAU in March 2026?
+    metric: MX-002
+  - q: How many people used the product in the first half of 2026?
+    metric: MX-002
+  - q: How many new accounts signed up in 2026?
+    metric: MX-003
+  - q: What is our MRR?
+    metric: MX-004
+  - q: How much recurring revenue did we make in Q1 2026?
+    metric: MX-004
+  - q: How many paying customers do we have?
+    metric: MX-005
+  - q: What is the average revenue per paying account?
+    metric: MX-006
+  - q: What share of new accounts activate in their first week?
+    metric: MX-007
+  - q: Is activation getting better or worse?
+    metric: MX-007
+  - q: What is month-over-month user retention?
+    metric: MX-008
+  - q: How many users come back the following month?
+    metric: MX-008
+  - q: How many active accounts prioritise features?
+    metric: MX-009
+  - q: How many terminal actions does an active user take per month?
+    metric: MX-010
+  - q: How many accounts actually do something rather than just look around?
+    metric: MX-011
+
+  # No metric covers these. The right behaviour is to say so.
+  - q: What is our net promoter score?
+    metric: null
+    why: No survey data in this warehouse at all.
+  - q: How long does the average support ticket take to close?
+    metric: null
+    why: There is no support ticket source.
+  - q: Which feature requests get the most votes?
+    metric: null
+    why: Votes are not modelled; idea_submitted is an event, not a vote count.
+  - q: What is our customer acquisition cost?
+    metric: null
+    why: No spend data.
+  - q: How many accounts churned last month?
+    metric: null
+    why: >
+      Deliberately absent. Churn is definable here but is not in the registry,
+      and guessing it from is_paying dropping to zero would invent a definition
+      nobody agreed to. This is the case that separates "not in the data" from
+      "not decided yet".

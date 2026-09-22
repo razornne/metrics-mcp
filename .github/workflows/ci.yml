@@ -25,10 +25,10 @@ jobs:
         run: uv sync --extra dev
 
       - name: Lint
-        run: uv run ruff check src tests evals data
+        run: uv run ruff check src tests evals data docs
 
       - name: Format check
-        run: uv run ruff format --check src tests evals data
+        run: uv run ruff format --check src tests evals data docs
 
       - name: Registry parses
         # A malformed metric is a broken deploy. It fails here, before

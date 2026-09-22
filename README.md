@@ -200,21 +200,13 @@ stubs are in CI.
 
 ## Architecture
 
-```
-data/generate.py ──► parquet ──► dbt on DuckDB ──► warehouse.duckdb
-   seeded, offline                staging ─► marts        │
-                                                          │
-metrics/_catalog.yml ─────────────────────────────────────┤
-   definitions, grain,            mx check resolves       │
-   dimensions, caveats            every reference ────────┤
-                                                          ▼
-                                            registry + SQL builder
-                                                          │
-                                       ┌──────────────────┴────────┐
-                                       ▼                           ▼
-                                  MCP server                   mx CLI
-                              4 tools, no run_sql          same code path
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/architecture-dark.svg">
+  <img alt="Generated data and dbt build a DuckDB warehouse. The YAML registry and the SQL builder sit between it and the two consumers — an MCP server with four tools and no run_sql, and the mx CLI. Answers pass through verify_answer." src="docs/architecture-light.svg" width="760">
+</picture>
+
+<sub>Both themes are generated from one definition by
+<code>docs/make_diagram.py</code> — two hand-drawn files drift.</sub>
 
 The CLI and the MCP server share the query builder, so what a reviewer sees on
 the command line is what an agent gets.
